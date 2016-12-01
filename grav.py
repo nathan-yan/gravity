@@ -122,6 +122,9 @@ def main():
 
 
 		bodies_to_delete = []
+		bodies_to_add = []
+		bodies_to_add_velocity = []
+		
 		mouse_pos = np.asarray(pygame.mouse.get_pos())
 
 		for event in pygame.event.get():
@@ -263,8 +266,8 @@ def main():
 						for body_ in range (bodies_to_add):
 							vector = normalize(direction_vec + np.random.uniform(low = -0.1, high = 0.1, size = 3))
 							dir_vector = copy.deepcopy(vector) * (int(sqrt(bodies[larger].mass)) + int(sqrt(ratios[body_] * half_mass)) + 50)
-							bodies.append(body(mass = ratios[body_] * half_mass, pos = bodies[larger].pos + dir_vector))
-							bodies[-1].velocity = copy.deepcopy(np.asarray(vector))/1
+							bodies_to_add.append(body(mass = ratios[body_] * half_mass, pos = bodies[larger].pos + dir_vector))
+							bodies_to_add[-1].velocity = copy.deepcopy(np.asarray(vector))/1
 					
 						bodies_to_delete.append(smaller)
 					pause = True
@@ -360,6 +363,8 @@ def main():
 					bodies_to_delete.append(i)
 			
 		bodies = [i for j, i in enumerate(bodies) if j not in bodies_to_delete]
+		for i in bodies_to_add:
+			bodies.append(copy.deecopy(bodies_to_add[i]))
 
 		pygame.display.flip()
 
