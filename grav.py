@@ -20,7 +20,7 @@ class body:
         self.velocity = np.asarray([0., 0., 0.,])
 
         self.pos_array = []
-
+        self.radius = 0
         self.force_vector = np.asarray([0., 0., 0.,])
         self.pos = np.asarray(pos).astype(float)
         self.prev_pos = np.asarray(pos).astype(float)
@@ -83,10 +83,10 @@ def softmax(x):
     return e_x / e_x.sum(axis=0) # only difference    
 
 def main():
-    screen = pygame.display.set_mode((1000, 1000))
-    #screen.fill((255, 255, 255))
+    screen = pygame.display.set_mode((1000, 1010))
+    #screen.fill((0, 0, 0))
 
-    #bodies = [body(mass = np.random.randint(10, 1000), pos = [np.random.randint(100, 900), np.random.randint(100, 900), np.random.randint(100, 900)]) for i in range (10)]
+    #bodies = [body(mass = np.random.randint(10, 1000), pos = [np.random.randint(100, 900), np.random.randint(100, 900), np.random.randint(100, 900)]) for i in range (100)]
     bodies = []
     #for i in range (len(bodies)):
     #    bodies[i].velocity = np.asarray([np.random.randint(-300, 300), np.random.randint(-300, 300), np.random.randint(-300, 300)]).astype(float)/1000
@@ -108,13 +108,21 @@ def main():
     manipulating_body = False
     difference = np.asarray([0., 0.,])
 
+    able_to_set = True
+
+    show_vectors = True
+    show_info = True
+
+    start_toolbar_ticks = 0
+
     trace = pygame.Surface((10000, 10000))
-    trace.fill((255, 255, 255))
+    trace.fill((0, 0, 0))
 
     delete = Font2.render('Delete', 1, (255, 100, 100))
     goto = Font2.render('Goto', 1, (100, 255, 100))
 
     while cont:
+        collided = False
         try:
             bodies[index].pos == 1
         except IndexError:
@@ -122,26 +130,29 @@ def main():
 
 
         bodies_to_delete = []
+        bodies_to_add = []
+        bodies_to_add_velocity = []
+        
         mouse_pos = np.asarray(pygame.mouse.get_pos())
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 cont = False 
-            
+            #CHANGE MASS CHANGE BACK TO 10
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.dict['button'] == 4:
-                    bodies[index].mass += 10
+                    bodies[index].mass += 50
                 elif event.dict['button'] == 5:
-                    bodies[index].mass -= 10
+                    bodies[index].mass -= 50
                     if bodies[index].mass < 0:
                         bodies[index].mass = 1
                     
                 if pygame.mouse.get_pressed() == (0, 0, 1) or pygame.mouse.get_pressed() == (0, 1, 0) or pygame.mouse.get_pressed() == (1, 0, 0):
 
-                    if screen.get_at(mouse_pos) != (255, 255, 255) and screen.get_at(mouse_pos) != (255, 100, 100):
+                    if screen.get_at(mouse_pos) != (0, 0, 0) and screen.get_at(mouse_pos) != (255, 100, 100):
                         for i in range (len(bodies)):
-                            
-                            if tuple(bodies[i].color) == screen.get_at(mouse_pos)[0:3]:
+                            if screen.get_at(mouse_pos) == tuple(bodies[i].color[0:3]):
+                            #if distance(mouse_pos, bodies[i].pos[0:2]) < bodies[i].radius:
                                 index = i
                         
                                 manipulating_body = True
@@ -170,7 +181,7 @@ def main():
                 elif event.key == pygame.K_t:
                     tracing = not tracing 
                 elif event.key == pygame.K_r:
-                    trace.fill((255, 255, 255))
+                    trace.fill((0, 0, 0))
                 elif event.key == pygame.K_ESCAPE:
                     bodies[index].velocity = np.asarray([0., 0., 0.,])
                 elif event.key == pygame.K_p:
@@ -191,7 +202,7 @@ def main():
                     bodies[index].pos = np.asarray([float((np.asarray(mouse_pos) - shift_vec[0:2])[0]), float((np.asarray(mouse_pos) - shift_vec[0:2])[1]), 0.])
 
             elif event.type == pygame.MOUSEBUTTONUP:
-                
+                able_to_set = True
                 manipulating_body = False
                 dragging = False
                 shiftx += add_shiftx
@@ -199,7 +210,7 @@ def main():
                 add_shiftx = 0
                 add_shifty = 0
 
-        screen.fill((255, 255, 255))
+        screen.fill((0, 0, 0))
         if tracing:
             #trace.scroll(dx = add_shiftx, dy = add_shifty)
             screen.blit(trace, shift_vec - 5000)
@@ -218,7 +229,9 @@ def main():
             #pygame.draw.aaline(screen, (100, 255, 100), bodies[index].pos[0:2].astype(int) + shift_vec[0:2], bodies[index].pos[0:2].astype(int) + shift_vec[0:2] -difference)
 
         if following:
-            shift_vec = -copy.deepcopy(bodies[index].pos[0:2].astype(int)) + 500
+            shiftx = (-copy.deepcopy(bodies[index].pos[0:2].astype(int)) + 500)[0]
+            shifty = (-copy.deepcopy(bodies[index].pos[0:2].astype(int)) + 500)[1]
+            shift_vec = np.asarray([shiftx, shifty])
         elif dragging:
             
             shift_vec = np.asarray([shiftx + add_shiftx, shifty + add_shifty])
@@ -226,6 +239,25 @@ def main():
             shift_vec = np.asarray([shiftx, shifty])
 
         
+        if 100 > mouse_pos[0] > 0 and 1010 > mouse_pos[1] > 1000:  
+            pygame.draw.rect(screen, (100, 100, 100), (0, 1000, 93, 10))
+            if pygame.mouse.get_pressed() == (1, 0, 0):
+                if able_to_set:
+                    show_info = not show_info
+                    able_to_set = False  
+        
+        if 210 > mouse_pos[0] > 110 and 1010 > mouse_pos[1] > 1000:  
+            pygame.draw.rect(screen, (100, 100, 100), (98, 1000, 102, 10))
+            if pygame.mouse.get_pressed() == (1, 0, 0):
+                if able_to_set:
+                    show_vectors = not show_vectors
+                    able_to_set = False  
+        
+        t = Font2.render('Toggle info ( ' + str(show_info) + ' )', 1, (255, 255, 255))
+        screen.blit(t, (0, 1000))
+
+        t = Font2.render('Toggle vector ( ' + str(show_vectors) + ' )', 1, (255, 255, 255))
+        screen.blit(t, (100, 1000))
 
         if not pause:
             for i in range(len(bodies)):
@@ -234,40 +266,49 @@ def main():
                 if not bodies[i].in_place:
                     bodies[i].update()
         for i in range (len(bodies)):
-            """
-            for j in range (len(bodies)):
-                if distance(bodies[i].pos, bodies[j].pos) < (int(sqrt(bodies[i].mass)) + 6 + int(sqrt(bodies[j].mass)) + 6) and distance(bodies[i].pos, bodies[j].pos) != 0:
+            if not pause and collided == False:
+                for j in range (len(bodies)):
+                    if distance(bodies[i].pos, bodies[j].pos) < (int(sqrt(bodies[i].mass))  + 12+ int(sqrt(bodies[j].mass)) ) and distance(bodies[i].pos, bodies[j].pos) != 0:
                     # Collision
                     
-                    if bodies[i].mass > bodies[j].mass:
-                        larger = i
-                        smaller = j
-                    else:
-                        larger = j
-                        smaller = i
+                        if bodies[i].mass > bodies[j].mass:
+                            larger = i
+                            smaller = j
+                        else:
+                            larger = j
+                            smaller = i
+            #666            
+                        if (bodies[larger].mass / bodies[smaller].mass) > 5 or bodies[larger].mass < 100:
+                            bodies[larger].mass += bodies[smaller].mass 
+                            bodies_to_delete.append(smaller)
+                        else:
                     
-                    if bodies[i].mass < 5 or bodies[j].mass < 5:
-                        bodies[larger].mass += bodies[smaller].mass 
-                        del bodies[smaller]
-                    else:
+                            direction_vec = normalize(bodies[smaller].pos - bodies[larger].pos) 
+                            start_pos = bodies[larger].pos + direction_vec *(int(sqrt(bodies[larger].mass)) + 30)
+                            
+                            bodies_to_add_ = np.random.randint(10, 40)
                     
-                        direction_vec = normalize(bodies[smaller].pos - bodies[larger].pos)
-                        bodies_to_add = np.random.randint(3, 10)
+                            random_nums = np.random.uniform(size = bodies_to_add_)
+                            #print random_nums
+                            ratios = softmax(random_nums)
+                        #    print sum(ratios)
                     
-                        random_nums = np.random.uniform(size = bodies_to_add)
-                        ratios = softmax(random_nums)
+                            bodies[larger].mass += 5 * bodies[smaller].mass/6.0
+                            half_mass = bodies[smaller].mass /6.0
                     
-                        bodies[larger].mass += bodies[smaller].mass/2.0
-                        half_mass = bodies[smaller].mass /2.0
-                    
-                        for body_ in range (bodies_to_add):
-                            vector = normalize(direction_vec + np.random.uniform(low = -1, high = 1, size = 3)) * np.random.uniform(0, 0.5)
-                            dir_vector = vector * (int(sqrt(bodies[larger].mass)) + int(sqrt(ratios[body_] * half_mass)) + 20)
-                            bodies.append(body(mass = ratios[body_] * half_mass, pos = bodies[larger].pos + dir_vector))
-                            bodies[-1].velocity = np.asarray(vector)
-
-                        del bodies[smaller]
-                        """
+                            for body_ in range (bodies_to_add_):
+                                vector = normalize(direction_vec + np.random.uniform(-2 ,2, size = 3))
+#            #print bodies
+                                dir_vector = vector * np.random.randint(100, 150)
+                            
+                                bodies_to_add.append(body(mass = ratios[body_] * half_mass, pos = copy.deepcopy(start_pos) + vector * 50))
+                                bodies_to_add[-1].velocity = copy.deepcopy(np.asarray(vector)) * 2.5
+                     
+                       # pause = True
+                        bodies_to_delete.append(smaller)
+                        #bodies[larger].velocity -= bodies[smaller].velocity/(bodies[larger].mass/bodies[smaller].mass)
+                        collided = True
+                        #pause = True
             pos = bodies[i].pos[0:2] + shift_vec[0:2]
 
             if tracing and not pause:
@@ -277,10 +318,10 @@ def main():
             
             if pos[0] > 1000 or pos[0] < 0 or pos[1] > 1000 or pos[1] < 0:
                 
-                mass = Font2.render(str(round(bodies[i].mass, 3)), 1, (0, 0, 0))
+                mass = Font2.render(str(round(bodies[i].mass, 3)), 1, (255, 255, 255))
                 velocity = Font2.render(str(np.round(bodies[i].velocity, 3)), 1, (100, 100, 255))
                 dist = distance(np.asarray([500, 500]), pos)
-                dist_marker = Font2.render('(' + str(round(dist, 3)) + 'm)', 1, (0, 0, 0))
+                dist_marker = Font2.render('(' + str(round(dist, 3)) + 'm)', 1, (255, 255, 255))
                 
                 
                 vec = normalize(pos - np.asarray([500., 500.]))
@@ -315,7 +356,7 @@ def main():
                         vec = -copy.deepcopy(bodies[i].pos[0:2].astype(int)) + 500
                         shiftx = vec[0]
                         shifty = vec[1]
-                        print 'click'
+                        #print 'click'
 
                 screen.blit(delete, (text_pos[0], text_pos[1] + 40))
                 screen.blit(goto, (text_pos[0] + 1, text_pos[1] + 55))
@@ -323,8 +364,8 @@ def main():
             else:
                 try:
                     mouse_pos_ = mouse_pos 
-
-                    text_pos = copy.deepcopy(bodies[i].pos[0:2]) + shift_vec[0:2] + np.asarray([int(sqrt(bodies[i].mass )) + 6 + 2 *  (i == index) + 5, int(sqrt(bodies[i].mass )) - 28 + 2 *  (i == index)])
+                    body_radius = int(sqrt(bodies[i].mass ))
+                    text_pos = copy.deepcopy(bodies[i].pos[0:2]) + shift_vec[0:2] + np.asarray([body_radius + 6 + 2 *  (i == index) + 5, body_radius - 28 + 2 *  (i == index)])
                     
 
                     
@@ -333,33 +374,39 @@ def main():
                         if pygame.mouse.get_pressed() == (1, 0, 0):
                             bodies_to_delete.append(i)
 
+               
                     screen.blit(delete, (text_pos[0], text_pos[1] + 40))
 
-                    pos = Font.render(str(np.round(bodies[i].pos, 3)), 1, (0, 0, 0))
-                    mass = Font.render(str(round(bodies[i].mass, 3)), 1, (0, 0, 0))
-                    velocity = Font.render(str(np.round(bodies[i].velocity, 3)), 1, (100, 100, 255))
+                    if show_info:
+                        pos = Font.render(str(np.round(bodies[i].pos, 3)), 1, (255, 255, 255))
+                        mass = Font.render(str(round(bodies[i].mass, 3)), 1, (255, 255, 255))
+                        velocity = Font.render(str(np.round(bodies[i].velocity, 3)), 1, (100, 100, 255))
 
-                    screen.blit(mass, bodies[i].pos[0:2] + shift_vec[0:2] + np.asarray([int(sqrt(bodies[i].mass )) + 6 + 2 *  (i == index) + 5 ,int(sqrt(bodies[i].mass )) + 2 *  (i == index)]))
-                
-                    screen.blit(velocity, bodies[i].pos[0:2] + shift_vec[0:2] + np.asarray([int(sqrt(bodies[i].mass )) + 6 + 2 *  (i == index) + 5 ,int(sqrt(bodies[i].mass )) - 11 + 2 *  (i == index)]))
+                        screen.blit(mass, bodies[i].pos[0:2] + shift_vec[0:2] + np.asarray([body_radius + 6 + 2 *  (i == index) + 5 ,body_radius + 2 *  (i == index)]))
+                    
+                        screen.blit(velocity, bodies[i].pos[0:2] + shift_vec[0:2] + np.asarray([body_radius + 6 + 2 *  (i == index) + 5 , body_radius - 11 + 2 *  (i == index)]))
 
-                    screen.blit(pos, bodies[i].pos[0:2] + shift_vec[0:2] + np.asarray([int(sqrt(bodies[i].mass )) + 6 + 2 *  (i == index) + 5 ,int(sqrt(bodies[i].mass )) - 24 + 2 *  (i == index)]))
+                        screen.blit(pos, bodies[i].pos[0:2] + shift_vec[0:2] + np.asarray([body_radius + 6 + 2 *  (i == index) + 5 ,body_radius - 24 + 2 *  (i == index)]))
 
-                    pygame.gfxdraw.aacircle(screen, bodies[i].pos[0:2].astype(int)[0] + shift_vec[0], bodies[i].pos[0:2].astype(int)[1] + shift_vec[1], int(sqrt(bodies[i].mass)) + 6 + 2 * (i == index), (255 *  (i == index), 0, 0))
-                    pygame.gfxdraw.filled_circle(screen, bodies[i].pos[0:2].astype(int)[0] + shift_vec[0], bodies[i].pos[0:2].astype(int)[1] + shift_vec[1], int(sqrt(bodies[i].mass)) + 6 + 2 *  (i == index), (255 *  (i == index), 0, 0))
+                    #if body_radius < 5:
+                    pygame.gfxdraw.aacircle(screen, bodies[i].pos[0:2].astype(int)[0] + shift_vec[0], bodies[i].pos[0:2].astype(int)[1] + shift_vec[1], body_radius + 6 + 2 * (i == index), (255 *  (i == index), 0, 0))
+                    pygame.gfxdraw.filled_circle(screen, bodies[i].pos[0:2].astype(int)[0] + shift_vec[0], bodies[i].pos[0:2].astype(int)[1] + shift_vec[1], body_radius + 6 + 2 *  (i == index), (255 *  (i == index), 0, 0))
 
-                    pygame.gfxdraw.aacircle(screen, bodies[i].pos[0:2].astype(int)[0] + shift_vec[0], bodies[i].pos[0:2].astype(int)[1] + shift_vec[1], int(sqrt(bodies[i].mass)) + 5, bodies[i].color)
-                    pygame.gfxdraw.filled_circle(screen, bodies[i].pos[0:2].astype(int)[0] + shift_vec[0], bodies[i].pos[0:2].astype(int)[1] + shift_vec[1], int(sqrt(bodies[i].mass)) + 5, bodies[i].color)
+                    pygame.gfxdraw.aacircle(screen, bodies[i].pos[0:2].astype(int)[0] + shift_vec[0], bodies[i].pos[0:2].astype(int)[1] + shift_vec[1], body_radius + 5, bodies[i].color)
+                    pygame.gfxdraw.filled_circle(screen, bodies[i].pos[0:2].astype(int)[0] + shift_vec[0], bodies[i].pos[0:2].astype(int)[1] + shift_vec[1], body_radius + 5, bodies[i].color)
 
                     factor_down = 1
 
-                    pygame.draw.aaline(screen, (255, 100, 100), bodies[i].pos[0:2].astype(int) + shift_vec, bodies[i].pos[0:2].astype(int) + shift_vec + ((bodies[i].force_vector[0:2] * factor_down) * 100).astype(int))
-                    pygame.draw.aaline(screen, (100, 255, 100), bodies[i].pos[0:2].astype(int) + shift_vec, bodies[i].pos[0:2].astype(int) + shift_vec + ((bodies[i].acceleration_vector[0:2] * factor_down) * 10).astype(int))
-                    pygame.draw.aaline(screen, (100, 100, 255), bodies[i].pos[0:2].astype(int) + shift_vec, bodies[i].pos[0:2].astype(int) + shift_vec + ((bodies[i].velocity[0:2] * factor_down) * 50).astype(int))
+                    if show_vectors:
+                        pygame.draw.aaline(screen, (255, 100, 100), bodies[i].pos[0:2].astype(int) + shift_vec, bodies[i].pos[0:2].astype(int) + shift_vec + ((bodies[i].force_vector[0:2] * factor_down) * 100).astype(int))
+                        pygame.draw.aaline(screen, (100, 255, 100), bodies[i].pos[0:2].astype(int) + shift_vec, bodies[i].pos[0:2].astype(int) + shift_vec + ((bodies[i].acceleration_vector[0:2] * factor_down) * 10).astype(int))
+                        pygame.draw.aaline(screen, (100, 100, 255), bodies[i].pos[0:2].astype(int) + shift_vec, bodies[i].pos[0:2].astype(int) + shift_vec + ((bodies[i].velocity[0:2] * factor_down) * 50).astype(int))
                 except OverflowError:
                     bodies_to_delete.append(i)
             
         bodies = [i for j, i in enumerate(bodies) if j not in bodies_to_delete]
+        for i in range(len(bodies_to_add)):
+            bodies.append(copy.deepcopy(bodies_to_add[i]))
 
         pygame.display.flip()
 
